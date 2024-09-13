@@ -18,6 +18,16 @@ The best part is that all the code generate by the agents is output as code file
 10. [Challenges and Solutions](#challenges-and-solutions)
 11. [Future Enhancements](#future-enhancements)
 
+## Demo screenshots of the app
+
+First the user is prompted to input what they want to be built by the AI agents
+![userinput](1projectgen.png)
+After a few seconds to a few minutes (depending on the complexity of the job), the agents ouput result file(s).
+![filesgen](2projectgen.png)
+Here is a simple example of a chat web-app produced in less than 20 seconds after the input!
+![result](3projectgen.png)
+
+
 ## Key Features
 
 - **Natural Language Processing**: Utilizes OpenAI's GPT models to understand and process user objectives.
