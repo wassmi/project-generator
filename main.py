@@ -19,6 +19,7 @@ import subprocess
 from rdflib import Graph, plugins
 from rdflib.plugin import register, Parser
 from rpy2 import robjects
+from io import StringIO
 
 # Register RDF parsers
 register('xml', Parser, 'rdflib.plugins.parsers.rdfxml', 'RDFXMLParser')
@@ -35,6 +36,9 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 ORCHESTRATOR_MODEL = "gpt-4o-mini-2024-07-18"
 SUB_AGENT_MODEL = "gpt-4o-mini-2024-07-18"
 REFINER_MODEL = "gpt-4o-mini-2024-07-18" 
+# ORCHESTRATOR_MODEL = "o1-mini"
+# SUB_AGENT_MODEL = "o1-mini"
+# REFINER_MODEL = "o1-mini" 
 
 # Initialize the Rich Console
 console = Console()
@@ -200,18 +204,23 @@ def gpt_orchestrator(objective, file_content=None, previous_results=None, use_se
     if file_content:
         console.print(Panel(f"File content:\n{file_content}", title="[bold blue]File Content[/bold blue]", title_align="left", border_style="blue"))
     
+    search_counter = 0
+    max_searches = 5  # Adjust as needed
+
+    # Improve prompt to emphasize completion and consistency
     messages = [
-        {"role": "system", "content": "You are an expert project manager and task orchestrator. Your role is to break down complex objectives into manageable sub-tasks and create detailed prompts for sub-agents to execute these tasks."},
+        {"role": "system", "content": "You are an expert project manager and task orchestrator. Your role is to break down complex objectives into manageable sub-tasks and create detailed prompts for sub-agents to execute these tasks. Ensure each sub-task contributes to a complete and polished final product."},
         {"role": "user", "content": f"""Based on the following objective{' and file content' if file_content else ''}, and the previous sub-task results (if any), please:
 
 1. Analyze the current state of the project.
 2. Identify the next logical sub-task to be completed.
 3. Create a detailed and specific prompt for a sub-agent to execute this task.
+4. Ensure the sub-task contributes to a complete, polished, and consistent final product.
 
 When dealing with code tasks:
-- Carefully review the code for errors, bugs, or potential improvements.
-- Include specific instructions for fixes or enhancements in the sub-task prompt.
-- Ensure that the sub-task contributes directly to the overall objective.
+- Provide clear specifications for the expected output, including structure and completeness.
+- Include specific instructions for a polished and professional result.
+- Ensure that the sub-task contributes directly to the overall objective and maintains consistency with previous tasks.
 
 If you believe the objective has been fully achieved, begin your response with 'The task is complete:' followed by a summary of the accomplishments.
 
@@ -222,6 +231,9 @@ Previous sub-task results:\n{previous_results_text}
 Provide your response in a clear, structured format."""}
     ]
 
+    if use_search and search_counter < max_searches:
+        # Add search query logic here
+        search_counter += 1
     if use_search:
         messages.append({"role": "user", "content": "Please also generate a JSON object containing a single 'search_query' key, which represents a question that, when asked online, would yield important information for solving the subtask. The question should be specific and targeted to elicit the most relevant and helpful resources. Format your JSON like this, with no additional text before or after:\n{\"search_query\": \"<question>\"}\n"})
 
@@ -262,16 +274,18 @@ def gpt_sub_agent(prompt, search_query=None, previous_gpt_tasks=None, use_search
     system_message = """You are a specialized AI agent tasked with executing specific sub-tasks within a larger project. Your role is to:
 
 1. Carefully analyze the given prompt and any provided context.
-2. Execute the task with high attention to detail and accuracy.
+2. Execute the task with high attention to detail, accuracy, and completeness.
 3. When dealing with code:
-   - Implement the requested features or fixes.
-   - Ensure the code is efficient, well-commented, and follows best practices.
+   - Implement the requested features or fixes fully.
+   - Ensure the code is efficient, well-commented, follows best practices, and is production-ready.
    - Provide explanations for significant changes or design decisions.
 4. Format your response clearly, using markdown for structure when appropriate.
-5. If the task involves multiple steps, number them for clarity.
+5. Ensure your output is complete, polished, and consistent with the overall project objectives.
+6. If the task involves multiple steps, number them for clarity and ensure all steps are completed.
 
 Previous tasks and their results:
 """ + "\n".join(f"Task: {task['task']}\nResult: {task['result']}" for task in previous_gpt_tasks)
+
     if continuation:
         prompt = continuation_prompt
 
@@ -311,18 +325,19 @@ Previous tasks and their results:
 def anthropic_refine(objective, sub_task_results, filename, projectname, continuation=False):
     console.print("\nCalling GPT-4 Turbo to provide the refined final output for your objective:")
     messages = [
-        {"role": "system", "content": """You are an expert project finalizer and technical writer. Your task is to review and refine sub-task results into a cohesive final output. You should:
+        {"role": "system", "content": """You are an expert project finalizer and technical writer. Your task is to review and refine sub-task results into a cohesive, complete, and polished final output. You should:
 
 1. Analyze the objective and all sub-task results thoroughly.
-2. Synthesize the information into a clear, well-structured final output.
-3. Ensure all aspects of the original objective are addressed.
-4. Add any missing information or details as needed.
+2. Synthesize the information into a clear, well-structured, and complete final output.
+3. Ensure all aspects of the original objective are addressed comprehensively.
+4. Add any missing information or details to create a polished and professional result.
 5. For coding projects:
    - Provide a concise and appropriate project name (max 20 characters).
-   - Create a detailed folder structure as a valid JSON object.
-   - Present each code file with its filename and content in the specified format.
-   - Ensure that HTML files are valid and complete, including <!DOCTYPE html>, <html>, <head>, and <body> tags.
-6. Maintain consistency in style and formatting throughout the output."""},
+   - Create a detailed and complete folder structure as a valid JSON object.
+   - Present each code file with its filename and content in the specified format, ensuring completeness.
+   - Ensure that HTML files are valid, complete, and production-ready, including all necessary tags and sections.
+6. Maintain consistency in style, formatting, and level of detail throughout the output.
+7. If the output seems incomplete or inconsistent, add necessary details or explanations to create a cohesive final product."""},
         {"role": "user", "content": f"""Objective: {objective}
 
 Sub-task results:
