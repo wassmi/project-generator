@@ -1,0 +1,12 @@
+Flask==2.1.0
+python-dotenv==0.19.2
+openai==0.27.0
+rich==10.16.2
+tavily-python==0.1.9
+html5lib==1.1
+pylint==2.12.2
+esprima==4.0.1
+PyYAML==6.0
+cssutils==2.4.0
+rdflib==6.2.0
+rpy2==3.5.1
