@@ -1,1 +1,1 @@
-## For more info, click here : https://wassmi.github.io/thothCode/
+## For more info, click here : https://wassmi.github.io/project-generator
