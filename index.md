@@ -1,4 +1,4 @@
-# ThothCode: the multi-agent AI Project Generator
+# Project Generator: the multi-agent AI Project Generator
 ## Overview
 
 AI Project Generator is a web application that leverages multi-agent AI workflow to automatically generate project structures, code, and documentation based on user-provided objectives. This tool aims to streamline the project initialization process for developers, saving time and providing a solid starting point for various coding projects.
